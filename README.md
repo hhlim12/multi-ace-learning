@@ -79,5 +79,5 @@ mace-torch
 
 ---
 
- **Author** Harry Halim  
+ **Author:** Harry Halim  
 **Purpose:** Research and teaching reference for understanding Multi-ACE, MACE, and ACE.
