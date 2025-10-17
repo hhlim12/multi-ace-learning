@@ -1,0 +1,8 @@
+numpy
+scipy
+ase
+matplotlib
+sympy
+e3nn
+torch
+mace-torch
