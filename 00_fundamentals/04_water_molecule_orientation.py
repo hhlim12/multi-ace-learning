@@ -160,50 +160,77 @@ theta, phi = spherical_angles(atoms[1].position - O)
 Y_before = np.array([sph_harm(m, l, phi, theta) for m in m_values])
 
 
-# =====================================================
-#  Step 6. Rotate molecule about x-axis (nontrivial rotation)
-# =====================================================
-Rx = rotation_matrix([1, 0, 0], np.pi/4)
-rotated_atoms.positions = atoms.positions @ Rx.T
+# ======= Replace your old Step 6–8 with this block =======
+import numpy as np
+import pandas as pd
+from scipy.special import sph_harm_y
+from sympy import symbols, lambdify
+from sympy.physics.wigner import wigner_d
+
+# --- helpers: ZYZ Euler rotation for vectors ---
+def Rz(a):
+    ca, sa = np.cos(a), np.sin(a)
+    return np.array([[ca,-sa,0],[sa,ca,0],[0,0,1]])
+
+def Ry(b):
+    cb, sb = np.cos(b), np.sin(b)
+    return np.array([[cb,0,sb],[0,1,0],[-sb,0,cb]])
+
+def euler_zyz(alpha, beta, gamma):
+    # Active rotation: R = Rz(alpha) @ Ry(beta) @ Rz(gamma)
+    return Rz(alpha) @ Ry(beta) @ Rz(gamma)
+
+# --- choose a generic, nontrivial rotation (will mix m channels) ---
+alpha, beta, gamma = np.pi/6, np.pi/4, -np.pi/5
+
+# --- compute Y_lm on ORIGINAL bond direction (take H1 here) ---
+l = 2
+m_vals = np.arange(-l, l+1)
+theta0, phi0 = spherical_angles(atoms[1].position - atoms[0].position)
+Y_before = np.array([complex(sph_harm_y(l, m, theta0, phi0)) for m in m_vals])
+
+# --- rotate GEOMETRY with the SAME ZYZ Euler angles ---
+R = euler_zyz(alpha, beta, gamma)
+rotated_atoms = atoms.copy()
+rotated_atoms.positions = atoms.positions @ R.T
+
+# --- compute Y_lm on ROTATED bond direction (same atom index) ---
 theta_r, phi_r = spherical_angles(rotated_atoms[1].position - rotated_atoms[0].position)
-Y_after = np.array([sph_harm(m, l, phi_r, theta_r) for m in m_values])
+Y_after = np.array([complex(sph_harm_y(l, m, theta_r, phi_r)) for m in m_vals])
 
+# --- build Wigner D^(l)(alpha,beta,gamma) numerically (lambdify is robust) ---
+beta_sym = symbols('beta', real=True)
+D = np.zeros((2*l+1, 2*l+1), dtype=complex)
+for i, m in enumerate(m_vals):       # row index = output m
+    for j, mp in enumerate(m_vals):  # col index = input m'
+        d_expr = wigner_d(l, m, mp, beta_sym)   # small-d_{m,mp}(beta)
+        d_fun  = lambdify(beta_sym, d_expr, 'numpy')
+        d_val  = d_fun(beta)
+        if np.ndim(d_val) > 0:
+            d_val = d_val.flat[0]
+        d_val = float(np.real(d_val))           # small-d is real
+        D[i, j] = np.exp(-1j*m*alpha) * d_val * np.exp(-1j*mp*gamma)
 
-# =====================================================
-#  Step 7. Compute Wigner D-matrix and predict Y_lm transformation
-# =====================================================
-alpha, beta, gamma = 0, np.pi/4, 0  # Euler angles for rotation about x
-D = np.zeros((2*l + 1, 2*l + 1), dtype=complex)
-for i, mp in enumerate(m_values):
-    for j, m in enumerate(m_values):
-        D[i, j] = complex(wigner_d(l, mp, m, alpha, beta, gamma))
+# --- analytic prediction in m-space ---
+Y_pred = D.conj().T @ Y_before
 
-Y_pred = D @ Y_before  # predicted transformed harmonics
-
-
-# =====================================================
-#  Step 8. Display results in a table
-# =====================================================
+# --- neatly compare (Re/Im + error) ---
 df = pd.DataFrame({
-    "m": m_values,
-    "Y_before (Re)": np.round(Y_before.real, 5),
-    "Y_before (Im)": np.round(Y_before.imag, 5),
-    "Y_after (Re)": np.round(Y_after.real, 5),
-    "Y_after (Im)": np.round(Y_after.imag, 5),
-    "Y_pred (Re)": np.round(Y_pred.real, 5),
-    "Y_pred (Im)": np.round(Y_pred.imag, 5),
-    "Error |Y_after - Y_pred|": np.round(np.abs(Y_after - Y_pred), 6)
+    "m": m_vals,
+    "Y_before (Re)": np.round(Y_before.real, 6),
+    "Y_before (Im)": np.round(Y_before.imag, 6),
+    "Y_after (Re)":  np.round(Y_after.real, 6),
+    "Y_after (Im)":  np.round(Y_after.imag, 6),
+    "Y_pred (Re)":   np.round(Y_pred.real, 6),
+    "Y_pred (Im)":   np.round(Y_pred.imag, 6),
+    "Error":         np.round(np.abs(Y_after - Y_pred), 9),
 })
-
-print("\n=== Step 8: Equivariance demonstration for Y_lm (ℓ=2) ===")
+print("\n=== Step 8: Equivariance demonstration for Y_lm (ℓ=2) with ZYZ-consistent rotation ===")
 print(df.to_string(index=False))
 print("""
 Interpretation:
----------------
-- 'Y_before': spherical harmonics evaluated on the original O–H bond.
-- 'Y_after' : spherical harmonics evaluated on the rotated bond.
-- 'Y_pred'  : predicted values obtained by applying the Wigner D-matrix
-              (theoretical SO(3) rotation law) to Y_before.
-- If 'Y_after' ≈ 'Y_pred' for all m, the spherical harmonics transform
-  exactly as expected under rotation — confirming **equivariance**.
+- Y_before: harmonics on original bond direction.
+- Y_after : harmonics on geometrically rotated bond (Rz(α)Ry(β)Rz(γ)).
+- Y_pred  : harmonics predicted by Wigner D^(ℓ)(α,β,γ) acting in m-space.
+If Error ≈ 0 for all m ⇒ perfect SO(3) equivariance (geometry rotation ≡ representation rotation).
 """)
