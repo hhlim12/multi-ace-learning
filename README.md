@@ -1,20 +1,48 @@
 # 🧠 Multi-ACE Learning Roadmap
 
-This repository contains structured learning materials, notes, and example code to understand
-**"The design space of E(3)-equivariant atom-centred interatomic potentials" (Batatia et al., 2025)**.
+**A structured roadmap and code repository to learn the theory behind the Multi-ACE framework**  
+*Batatia et al., Nature Machine Intelligence (2025)*
 
-Refer to the detailed roadmap and study plan in the main README for conceptual flow.
+This project connects the dots between:
 
-## Folder Overview
+- 🧩 **Atomic Cluster Expansion (ACE)** – physics-based, symmetry-adapted descriptors  
+- 🧠 **Equivariant Neural Networks (E(3)-NNs)** – message-passing generalizations of ACE  
+- ⚙️ **MACE and Multi-ACE** – unified models combining body-order and network depth  
 
-| Folder | Description |
-|:--|:--|
-| `01_spherical_harmonics/` | Fundamentals of spherical harmonics and rotation symmetry. |
-| `02_atomic_cluster_expansion/` | Atomic Cluster Expansion basics and descriptor coding. |
-| `03_equivariant_networks/` | Transition from ACE to MACE and equivariant neural networks. |
-| `04_multi_ace_framework/` | Notes and equations from the Multi-ACE 2025 paper. |
-| `figures/` | Diagrams, charts, and concept visuals. |
+---
 
+## 📚 Learning Route Overview
+
+| Phase | Folder | Focus |
+|:--:|:--|:--|
+| 00 | [`00_fundamentals/`](./00_fundamentals) | Geometry, spherical harmonics, Clebsch–Gordan, SO(3)/E(3) basics |
+| 01 | [`01_atomic_cluster_expansion/`](./01_atomic_cluster_expansion) | Atomic Cluster Expansion (ACE): neighbor density, one-particle basis |
+| 02 | [`02_equivariant_neural_networks/`](./02_equivariant_neural_networks) | E(3)-equivariant message passing, tensor products (`e3nn`) |
+| 03 | [`03_mace_architecture/`](./03_mace_architecture) | Multiplicative ACE (MACE): learnable equivariant model |
+| 04 | [`04_multi_ace_framework/`](./04_multi_ace_framework) | Multi-ACE 2025: unified design space for all equivariant IPs |
+| — | [`figures/`](./figures) | Generated plots and visual diagrams |
+
+---
+
+## 🧩 Learning Goals
+
+1. Understand **rotational symmetry** through spherical harmonics and tensor algebra.  
+2. Build ACE-style **invariant descriptors** from neighbor densities.  
+3. Implement simple **E(3)-equivariant layers** using `e3nn`.  
+4. Explore the **MACE architecture** and how it extends ACE.  
+5. Re-derive the **Multi-ACE equations (1–4)** and map them to MPNN frameworks.  
+
+Each phase includes Jupyter notebooks (`.ipynb`) and Python scripts (`.py`) for hands-on learning.
+
+---
+
+## 🧭 Study Order
+
+1. `00_fundamentals/` → mathematical background  
+2. `01_atomic_cluster_expansion/` → ACE theory and coding  
+3. `02_equivariant_neural_networks/` → symmetry & equivariance  
+4. `03_mace_architecture/` → practical MACE model  
+5. `04_multi_ace_framework/` → unification and advanced topics  
 ---
 
 ## 📦 Setup
